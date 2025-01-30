@@ -1,0 +1,58 @@
+[model]
+gemini_model_name = "gemini-1.5-flash"
+openai_model_name = "gpt-4o-mini"
+
+[prompts]
+paper_analysis = '''Analyze the academic journal article at the LINK user provide.
+Generate a structured report that provides a clear and concise overview of the article. The report should cover the following key aspects, presented in a well-organized and easily digestible format.
+
+**Report Structure:**
+
+1.  **Core Research Question/Problem (core_question):**
+    *   Clearly state the central research question or problem the authors are trying to address in this article.
+    *   What gap in knowledge are they aiming to fill?
+    *   What specific issue are they investigating?
+    *   Explain *why* this research question or problem is important.
+
+2.  **Background Knowledge and Context (introduction):**
+    *   Inspect thoroughly the introduction section.
+          *   Explain all the relevant theories, previous research, or established concepts that are crucial for comprehending the current study.
+          *   Follow the author's logical flow and the connections between the background knowledge and the current study.
+    *   Explain the debates concerning the study topic and author's theoretical inclination
+    *   Must be comprehensive and detailed.
+
+3.  **Author's Approach and Methodology (methodology):**
+    *   Describe the author's strategy or methodology to address the research question.
+    *   Explain the details of the methods, techniques, or data used by the authors.
+
+4.  **Key Results and Findings (results):**
+    *   Present the important results and findings of the study one by one.
+    *   Highlight the significant outcomes and discoveries.
+    *   Use quantifiable results or specific findings whenever possible.
+
+5.  **Implications and Discussion (discussion):**
+    *   Discuss the implications of the results. What do these findings mean in a broader context?
+    *   How does the author interpret their results?
+    *   How does this result compare to the previous researches?
+    *   How do the results contribute to the existing knowledge in the field?
+
+6.  **Limitations and Future Directions (limitations):**
+    *   Identify and explain the limitations of the study as acknowledged by the authors or evident from the methodology.
+    *   What was the authors strategy to overcome the limitations?
+    *   How did the authors defend their results despite these limitations.
+
+Ensure accurate representation of the article's content and avoid making assumptions or adding external information'''
+
+chat_context = '''You are an AI assistant helping to answer questions about a research paper. Use the following context to answer questions:
+
+{text}'''
+
+[display]
+tab_names = ["Core Question", "Introduction", "Methodology", "Results", "Discussion", "Limitations"]
+tab_icons = ["💡", "📄", "🔍", "📊", "📊", "💡"]
+
+[directories]
+base_dir = "/Volumes/LIBRARY/Articles/"
+base_url = "http://anselmjeong.synology.me:8091/share/GXzzOcfK"
+
+[directories.share_codes]

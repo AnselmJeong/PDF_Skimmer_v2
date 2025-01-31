@@ -18,7 +18,7 @@ def get_file_url(file_path: str | Path, base_url: str = BASE_URL) -> str:
     if str(file_path).startswith(BASE_DIR):
         file_path = file_path.relative_to(BASE_DIR)
     # URL encode the filename
-    encoded_filename = urllib.parse.quote(str(file_path.name))
+    encoded_filename = urllib.parse.quote(str(file_path))
 
     # Combine base URL with encoded filename
     full_url = "/".join([base_url, encoded_filename])
@@ -32,13 +32,13 @@ class ArticleAnalyzer:
 
     def summarize(self, file_path: str) -> dict:
         url = get_file_url(file_path, base_url=BASE_URL)
-        print(f"URL: {url}")
+        # print(f"URL: {url}")
         self.chatbot.set_url(url)
 
         try:
             response = self.chatbot.query_llm()
-            print("Response from the LLM:\n")
-            print(response)
+            # print("Response from the LLM:\n")
+            # print(response)
             return response
 
         except Exception as e:

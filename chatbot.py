@@ -5,23 +5,47 @@ import os
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+from langchain_deepseek import ChatDeepSeekAI
+from langchain_community.llms.tongyi import Tongyi
 
 from config import CONFIG
 from custom_types import PaperSummary
 
 load_dotenv()
 
-SYSTEM_MESSAGE = {"analysis": CONFIG["prompts"]["analysis"], "chatbot": CONFIG["prompts"]["chatbot"]}
+SYSTEM_MESSAGE = {
+    "analysis": CONFIG["prompts"]["analysis"],
+    "chatbot": CONFIG["prompts"]["chatbot"],
+}
 
-MODEL_NAMES = {"gemini": CONFIG["model"]["gemini_model_name"], "openai": CONFIG["model"]["openai_model_name"]}
+MODEL_NAMES = {
+    "gemini": CONFIG["model"]["gemini_model_name"],
+    "openai": CONFIG["model"]["openai_model_name"],
+    "deepseek": CONFIG["model"]["deepseek_model_name"],
+    "qwen": CONFIG["model"]["qwen_model_name"],
+}
 
-PROVIDER_CLASSES = {"gemini": ChatGoogleGenerativeAI, "openai": ChatOpenAI}
+PROVIDER_CLASSES = {
+    "gemini": ChatGoogleGenerativeAI,
+    "openai": ChatOpenAI,
+    "deepseek": ChatDeepSeekAI,
+    "qwen": Tongyi,
+}
 
-API_KEYS = {"gemini": os.getenv("GEMINI_API_KEY"), "openai": os.getenv("OPENAI_API_KEY")}
+API_KEYS = {
+    "gemini": os.getenv("GEMINI_API_KEY"),
+    "openai": os.getenv("OPENAI_API_KEY"),
+    "deepseek": os.getenv("DEEPSEEK_API_KEY"),
+    "qwen": os.getenv("QWEN_API_KEY"),
+}
 
 
 class Chatbot:
-    def __init__(self, type: Literal["analysis", "chatbot"], provider: Literal["gemini", "openai"] = "gemini"):
+    def __init__(
+        self,
+        type: Literal["analysis", "chatbot"],
+        provider: Literal["gemini", "openai", "deepseek", "qwen"] = "gemini",
+    ):
         """
         Create an instance of the Chatbot class, provide the file path, type of prompt, and provider.
 
@@ -29,7 +53,7 @@ class Chatbot:
         -----------
         type : Literal["analysis", "chatbot"]
             The type of prompt to use. "analysis" for generating a structured report, "chatbot" for interactive Q&A.
-        provider : Literal["gemini", "openai"], optional
+        provider : Literal["gemini", "openai", "deepseek", "qwen"], optional
             The provider to use for the language model. Default is "gemini".
 
         """
@@ -90,7 +114,7 @@ class Chatbot:
 
         self.history_langchain.append({"role": "user", "content": query})
 
-        print(self.history_langchain)
+        # print(self.history_langchain)
 
         response = self.llm.invoke(self.history_langchain)
 

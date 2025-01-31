@@ -5,7 +5,7 @@ from typing import Literal
 
 
 class PDFSkimmer:
-    def __init__(self, provider: Literal["gemini", "openai"] = "gemini"):
+    def __init__(self, provider: Literal["gemini", "openai", "deepseek", "qwen"] = "gemini"):
         self.article_analyzer = ArticleAnalyzer(provider=provider)
         self.db_manager = DatabaseManager()
         self.current_article = None
@@ -20,5 +20,16 @@ class PDFSkimmer:
 
             # Create DatabaseSummary from the dict
             self.db_manager.save_summary(paper_summary)
+            return paper_summary
+        return None
+
+    def force_summary(self, file_path: str):
+        """Force a new summary regardless of database state"""
+        if paper_summary := self.article_analyzer.summarize(file_path):
+            # Convert PaperSummary to dict and add file_path
+            paper_summary["file_path"] = Path(file_path).name
+
+            # Create DatabaseSummary from the dict and overwrite existing
+            self.db_manager.save_summary(paper_summary, force_update=True)
             return paper_summary
         return None

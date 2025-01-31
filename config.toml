@@ -1,9 +1,12 @@
 [database]
-db_name = "PDFSkimmer"
+db_name = "PDF_Skimmer"
 
 [model]
-gemini_model_name = "gemini-1.5-flash"
-openai_model_name = "gpt-4o-mini"
+providers = ["gemini", "openai", "deepseek", "qwen"]
+gemini_model_name = "gemini-2.0-flash-exp"
+openai_model_name = "o3-mini"
+deepseek_model_name = "deepseek-chat"
+qwen_model_name = "qwen-max"
 
 [prompts]
 analysis = '''Analyze the academic journal article at the LINK user provides.
@@ -18,15 +21,18 @@ Generate a structured report that provides a clear and concise overview of the a
     *   Explain *why* this research question or problem is important.
 
 2.  **Background Knowledge and Context (introduction):**
+    *   IMPORTANT: This section is not a summary, it should be a detailed analysis of the background knowledge and context.
     *   Inspect thoroughly the introduction section.
-          *   Explain all the relevant theories, previous research, or established concepts that are crucial for comprehending the current study.
-          *   Follow the author's logical flow and the connections between the background knowledge and the current study.
-    *   Explain the debates concerning the study topic and author's theoretical inclination
-    *   Must be comprehensive and detailed.
+          *   Explain all the relevant theories, previous research, or established concepts introduced in the article that are helpful for comprehending the current study.
+          *   Follow the author's logical flow, but you can reorganize the connections between the introduced concepts.
+    *   Explain the debates concerning the research question.
+          *   What are the main arguments for and against the research question?
+          *   What are the arguments that the authors defend, and what are their rationales?
 
 3.  **Author's Approach and Methodology (methodology):**
     *   Describe the author's strategy or methodology to address the research question.
     *   Explain the details of the methods, techniques, or data used by the authors.
+    *   If there is a unique characteristic of this study in terms of methodology, emphasize and explain it.
 
 4.  **Key Results and Findings (results):**
     *   Present the important results and findings of the study one by one.
@@ -67,7 +73,8 @@ tab_icons = ["💡", "📄", "🔍", "📊", "📊", "💡"]
 
 [directories]
 base_url = "http://anselmjeong.synology.me:8091/share/GXzzOcfK"
-base_dir = "/Volumes/AnselmJeong.ddns.net/LIBRARY/Articles"
+base_dir = "/Volumes/LIBRARY/Articles/"
+
 
 [home_directory]
-base_dir = "/Volumes/LIBRARY/Articles/"
+base_dir = "/Volumes/AnselmJeong.ddns.net/LIBRARY/Articles"

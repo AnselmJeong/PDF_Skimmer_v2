@@ -1,9 +1,7 @@
-from typing import TypedDict
-from datetime import datetime
-import typing_extensions as typing
+from pydantic import BaseModel
 
 
-class PaperSummary(typing.TypedDict):
+class PaperSummary(BaseModel):
     core_question: str
     introduction: str
     methodology: str
@@ -12,7 +10,7 @@ class PaperSummary(typing.TypedDict):
     limitations: str
 
 
-class DatabaseSummary(TypedDict):
+class DatabaseSummary(BaseModel):
     file_path: str
     core_question: str
     introduction: str
@@ -20,4 +18,3 @@ class DatabaseSummary(TypedDict):
     results: str
     discussion: str
     limitations: str
-    last_updated: datetime

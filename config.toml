@@ -1,9 +1,12 @@
+[database]
+db_name = "PDFSkimmer"
+
 [model]
 gemini_model_name = "gemini-1.5-flash"
 openai_model_name = "gpt-4o-mini"
 
 [prompts]
-paper_analysis = '''Analyze the academic journal article at the LINK user provide.
+analysis = '''Analyze the academic journal article at the LINK user provides.
 Generate a structured report that provides a clear and concise overview of the article. The report should cover the following key aspects, presented in a well-organized and easily digestible format.
 
 **Report Structure:**
@@ -41,18 +44,30 @@ Generate a structured report that provides a clear and concise overview of the a
     *   What was the authors strategy to overcome the limitations?
     *   How did the authors defend their results despite these limitations.
 
-Ensure accurate representation of the article's content and avoid making assumptions or adding external information'''
+Ensure accurate representation of the article's content and avoid making assumptions or adding external information
 
-chat_context = '''You are an AI assistant helping to answer questions about a research paper. Use the following context to answer questions:
+Output the result in JSON format with the following keys:
+- core_question
+- introduction
+- methodology
+- results
+- discussion
+- limitations
 
-{text}'''
+LINK:{LINK}
+'''
+
+chatbot = '''You are an AI assistant helping to answer questions about the research paper provided at the LINK.
+
+{LINK}'''
 
 [display]
 tab_names = ["Core Question", "Introduction", "Methodology", "Results", "Discussion", "Limitations"]
 tab_icons = ["💡", "📄", "🔍", "📊", "📊", "💡"]
 
 [directories]
-base_dir = "/Volumes/LIBRARY/Articles/"
 base_url = "http://anselmjeong.synology.me:8091/share/GXzzOcfK"
+base_dir = "/Volumes/AnselmJeong.ddns.net/LIBRARY/Articles"
 
-[directories.share_codes]
+[home_directory]
+base_dir = "/Volumes/LIBRARY/Articles/"

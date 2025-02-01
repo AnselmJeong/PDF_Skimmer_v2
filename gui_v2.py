@@ -4,7 +4,7 @@ from db_manager import DatabaseManager
 from config import CONFIG
 from skimmer import PDFSkimmer
 import os
-from utils import paragraph_to_markdown_list
+from utils import paragraph_to_markdown_list, get_file_url
 from chatbot import Chatbot
 
 BASE_DIR = CONFIG["directories"]["base_dir"]
@@ -35,13 +35,10 @@ with gr.Blocks(
         flex-direction: column;
         height: 100%;
     }
-    #chatbox {
-        flex-grow: 1;
-        height: 100% !important;
-    }
     .gradio-container-5-14-0 .prose {
         font-size: larger !important;
     }
+  
     """,
     fill_height=True,
     fill_width=True,
@@ -82,16 +79,17 @@ with gr.Blocks(
                 for ix, (name, icon) in enumerate(zip(tab_names, tab_icons)):
                     with gr.Tab(f"{icon} {name}"):
                         # textboxes.append(gr.Textbox(label=name, lines=12, scale=1))
-                        textboxes.append(gr.Markdown(label=name, elem_id=f"box{ix}"))
-
+                        with gr.Row(min_height="25vh"):
+                            textboxes.append(gr.Markdown(label=name, elem_id=f"box{ix}"))
             summarize_again_btn = gr.Button("Summarize Again")
 
-            gr.Markdown("## Chat with the paper")
+            # gr.Markdown("## Chat with the paper")
             chatbox = gr.Chatbot(
                 type="messages",
-                label="Langchain Agent",
-                min_height="45vh",
+                label="Chat with the paper",
+                min_height="50vh",
                 elem_id="chatbox",
+                autoscroll=True,
             )
             with gr.Group():
                 with gr.Row():
@@ -103,6 +101,7 @@ with gr.Blocks(
                     return [None] * 6  # Return None for all 6 textboxes
 
                 result = skimmer.load_or_summary(file_path)
+                dialogue_bot.set_url(get_file_url(file_path))
                 if result is None:
                     return [None] * 6
 
@@ -153,9 +152,9 @@ with gr.Blocks(
             save_button.click(fn=save_chat_history, inputs=[file_explorer, chatbox])
 
             input.submit(_handle_chat, [input, chatbox], [input, chatbox])
-            file_explorer.change(fn=select_pdf, inputs=[file_explorer], outputs=textboxes).then(
+            file_explorer.change(
                 fn=load_chat_history, inputs=[file_explorer], outputs=[chatbox]
-            )
+            ).then(fn=select_pdf, inputs=[file_explorer], outputs=textboxes)
             # file_explorer.change(fn=get_summary, inputs=file_explorer, outputs=[result])
 
             def force_summarize(file_path: str):

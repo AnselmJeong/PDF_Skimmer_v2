@@ -3,16 +3,11 @@ from pathlib import Path
 from db_manager import DatabaseManager
 from config import CONFIG
 from skimmer import PDFSkimmer
-import os
-from utils import paragraph_to_markdown_list, get_file_url
-from chatbot import Chatbot
 
 BASE_DIR = CONFIG["directories"]["base_dir"]
-gr.set_static_paths(paths=[BASE_DIR])
 
 db_manager = DatabaseManager()
 skimmer = PDFSkimmer()
-dialogue_bot = Chatbot(type="chatbot")
 
 with gr.Blocks(
     css="""
@@ -27,38 +22,9 @@ with gr.Blocks(
     }
     #file_explorer .file-explorer-files span {
         font-size: 12px !important;
-    
-    .gradio-container {
-        height: 100vh !important;
     }
-    .gradio-column {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .gradio-container-5-14-0 .prose {
-        font-size: larger !important;
-    }
-  
-    """,
-    fill_height=True,
-    fill_width=True,
+"""
 ) as demo:
-    with gr.Sidebar():
-        gr.Markdown("# � PDF Skimmer")
-
-        provider_selector = gr.Dropdown(
-            choices=["gemini", "openai", "deepseek", "qwen"], label="Model Provider", value="gemini"
-        )
-
-        def change_provider(provider: str):
-            global skimmer
-            skimmer = PDFSkimmer(provider=provider)
-            global dialogue_bot
-            dialogue_bot = Chatbot(type="chatbot", provider=provider)
-
-        provider_selector.change(fn=change_provider, inputs=[provider_selector])
-
     with gr.Row():
         with gr.Column():
             file_explorer = gr.FileExplorer(
@@ -67,30 +33,27 @@ with gr.Blocks(
                 glob="**/*.pdf",
                 label="PDF Files",
                 elem_id="file_explorer",
-                min_height="95vh",
+                min_height=1000,
             )
         with gr.Column():
-            gr.Markdown("## Paper Summary")
+            gr.Markdown("### Paper Summary")
 
             with gr.Tabs():
                 tab_names = CONFIG["display"]["tab_names"]
                 tab_icons = CONFIG["display"]["tab_icons"]
                 textboxes = []
 
-                for ix, (name, icon) in enumerate(zip(tab_names, tab_icons)):
+                for name, icon in zip(tab_names, tab_icons):
                     with gr.Tab(f"{icon} {name}"):
-                        # textboxes.append(gr.Textbox(label=name, lines=12, scale=1))
-                        with gr.Row(min_height="25vh"):
-                            textboxes.append(gr.Markdown(label=name, elem_id=f"box{ix}"))
-            summarize_again_btn = gr.Button("Summarize Again")
+                        textboxes.append(gr.Textbox(label=name, lines=10))
 
-            # gr.Markdown("## Chat with the paper")
+            with gr.Row():
+                summarize_again_btn = gr.Button("Summarize Again")
+
+            gr.Markdown("# Chat with a LangChain Agent")
             chatbox = gr.Chatbot(
                 type="messages",
-                label="Chat with the paper",
-                min_height="50vh",
-                elem_id="chatbox",
-                autoscroll=True,
+                label="Langchain Agent",
             )
             with gr.Group():
                 with gr.Row():
@@ -102,23 +65,20 @@ with gr.Blocks(
                     return [None] * 6  # Return None for all 6 textboxes
 
                 result = skimmer.load_or_summary(file_path)
-                dialogue_bot.set_url(get_file_url(file_path))
                 if result is None:
                     return [None] * 6
 
                 # Extract values from dictionary in the order matching our components
                 return (
-                    paragraph_to_markdown_list(result["core_question"]),
-                    paragraph_to_markdown_list(result["introduction"]),
-                    paragraph_to_markdown_list(result["methodology"]),
-                    paragraph_to_markdown_list(result["results"]),
-                    paragraph_to_markdown_list(result["discussion"]),
-                    paragraph_to_markdown_list(result["limitations"]),
+                    result["core_question"],  # For core_question textbox
+                    result["introduction"],  # For introduction textbox
+                    result["methodology"],  # For methodology textbox
+                    result["results"],  # For results textbox
+                    result["discussion"],  # For discussion textbox
+                    result["limitations"],  # For limitations textbox
                 )
 
-            def load_chat_history(file_path):
-                if not file_path or not isinstance(file_path, (str, os.PathLike)):
-                    return []
+            def load_chat_history(file_path: str):
                 try:
                     file_name = Path(file_path).name
                     chat_record = db_manager.get_chat_history(file_name)
@@ -144,18 +104,18 @@ with gr.Blocks(
             def _handle_chat(input: str, history: list):
                 history.append({"role": "user", "content": input})
 
-                response = dialogue_bot.query_llm(input, history)
+                # response = chatbot.query_llm(input, history)
 
-                # response = f"This is a {len(history)} test response"
+                response = f"This is a {len(history)} test response"
                 history.append({"role": "assistant", "content": response})
                 return "", history
 
             save_button.click(fn=save_chat_history, inputs=[file_explorer, chatbox])
 
             input.submit(_handle_chat, [input, chatbox], [input, chatbox])
-            file_explorer.change(
+            file_explorer.change(fn=select_pdf, inputs=[file_explorer], outputs=textboxes).then(
                 fn=load_chat_history, inputs=[file_explorer], outputs=[chatbox]
-            ).then(fn=select_pdf, inputs=[file_explorer], outputs=textboxes)
+            )
             # file_explorer.change(fn=get_summary, inputs=file_explorer, outputs=[result])
 
             def force_summarize(file_path: str):

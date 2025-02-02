@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "gradio-pdf>=0.0.22",
     "gradio>=5.13.2",
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.5",
@@ -13,6 +14,7 @@ dependencies = [
     "langchain-deepseek>=0.0.1",
     "langchain-google-genai>=2.0.9",
     "langchain-openai>=0.3.3",
+    "modelscope-studio>=1.0.2",
     "psycopg2-binary>=2.9.10",
     "pydantic>=2.10.6",
     "python-dotenv>=1.0.1",

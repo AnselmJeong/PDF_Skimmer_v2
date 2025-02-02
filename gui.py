@@ -1,141 +1,232 @@
 import gradio as gr
+from gradio_pdf import PDF
 from pathlib import Path
 from db_manager import DatabaseManager
 from config import CONFIG
 from skimmer import PDFSkimmer
+import os
+from utils import paragraph_to_markdown_list, get_file_url
+from chatbot import Chatbot
+import modelscope_studio.components.antd as antd
+import modelscope_studio.components.base as ms
+from contextlib import ExitStack
+
 
 BASE_DIR = CONFIG["directories"]["base_dir"]
+gr.set_static_paths(paths=[BASE_DIR])
 
-db_manager = DatabaseManager()
-skimmer = PDFSkimmer()
-
-with gr.Blocks(
-    css="""
+CSS = """
     #file_explorer {
         font-size: 12px;
+        height: 100% !important;
+        overflow: hidden !important;
     }
     #file_explorer * {
         font-size: 12px !important;
     }
     #file_explorer .file-explorer-files {
         font-size: 12px !important;
+        overflow: hidden !important;
     }
     #file_explorer .file-explorer-files span {
         font-size: 12px !important;
     }
-"""
-) as demo:
-    with gr.Row():
-        with gr.Column():
+    .pdf-canvas {
+        flex: 1;
+        overflow: auto;
+        min-height: 50vh !important;
+    }
+    .pdf-canvas canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    div.gr-group.svelte-1nguped {
+        background-color: transparent;
+    }
+    div.styler.svelte-1nguped {
+     background-color: transparent;
+    }
+    
+   .prose {
+        font-size: 16px !important; /* gr.Markdown의 폰트 크기로 조정 */
+    }
+    """
+
+db_manager = DatabaseManager()
+skimmer = PDFSkimmer()
+dialogue_bot = Chatbot(type="chatbot")
+
+
+def _handle_chat(input: str, history: list):
+    history.append({"role": "user", "content": input})
+
+    response = dialogue_bot.query_llm(input, history)
+
+    # response = f"This is a {len(history)} test response"
+    history.append({"role": "assistant", "content": response})
+    return "", history
+
+
+def load_chat_history(file_path):
+    if not file_path or not isinstance(file_path, (str, os.PathLike)):
+        return []
+    try:
+        file_name = Path(file_path).name
+        chat_record = db_manager.get_chat_history(file_name)
+        if chat_record:
+            return chat_record
+        return []
+    except Exception as e:
+        print(f"Error loading chat history: {str(e)}")
+        return []
+
+
+# Add file_explorer change event to load chat history
+
+
+def save_chat_history(file_path: str, history: list):
+    if not file_path:
+        return gr.Error("Please select a file first")
+    try:
+        file_name = Path(file_path).name
+        db_manager.save_chat_history(file_name, history)
+        gr.Info("Chat history saved successfully")
+    except Exception as e:
+        gr.Error(f"Error saving chat history: {str(e)}")
+
+
+def generate_sidebar():
+    with gr.Sidebar() as sidebar:
+        gr.Markdown("# PDF Skimmer")
+
+        provider_selector = gr.Dropdown(
+            choices=["gemini", "openai", "deepseek", "qwen"], label="Model Provider", value="gemini"
+        )
+
+        def change_provider(provider: str):
+            global skimmer
+            skimmer = PDFSkimmer(provider=provider)
+            global dialogue_bot
+            dialogue_bot = Chatbot(type="chatbot", provider=provider)
+
+        provider_selector.change(fn=change_provider, inputs=[provider_selector])
+
+    return sidebar
+
+
+def generate_summary_tabs():
+    with gr.Tabs() as summary_tabs:
+        tab_names = CONFIG["display"]["tab_names"]
+        tab_icons = CONFIG["display"]["tab_icons"]
+        textboxes = []
+
+        for ix, (name, icon) in enumerate(zip(tab_names, tab_icons)):
+            with gr.Tab(f"{icon} {name}"):
+                # textboxes.append(gr.Textbox(label=name, lines=12, scale=1))
+                with gr.Row(min_height="25vh"):
+                    textboxes.append(
+                        gr.Markdown(
+                            label=name, elem_id=f"box{ix}", elem_classes=["markdown-textbox"]
+                        )
+                    )
+    return summary_tabs, textboxes
+
+
+def generate_explorer_pdf_viewer():
+    with antd.Splitter(layout="vertical") as explorer_pdf_viewer:
+        with antd.Splitter.Panel(collapsible=True):
             file_explorer = gr.FileExplorer(
                 root_dir=BASE_DIR,
                 file_count="single",
                 glob="**/*.pdf",
                 label="PDF Files",
                 elem_id="file_explorer",
-                min_height=1000,
+                min_height="45vh",
+                max_height="80vh",
             )
-        with gr.Column():
-            gr.Markdown("### Paper Summary")
+        with antd.Splitter.Panel(collapsible=True):
+            pdf_viewer = PDF(
+                height="1800",
+                elem_classes=["pdf-canvas"],
+            )
+    return explorer_pdf_viewer, file_explorer, pdf_viewer
 
-            with gr.Tabs():
-                tab_names = CONFIG["display"]["tab_names"]
-                tab_icons = CONFIG["display"]["tab_icons"]
-                textboxes = []
 
-                for name, icon in zip(tab_names, tab_icons):
-                    with gr.Tab(f"{icon} {name}"):
-                        textboxes.append(gr.Textbox(label=name, lines=10))
-
+def generate_chat_interface(file_explorer: gr.FileExplorer):
+    with gr.Group() as chat_interface:
+        gr.Markdown("## Chat with the paper")
+        chatbox = gr.Chatbot(
+            type="messages",
+            show_label=False,
+            min_height="50vh",
+            elem_id="chatbox",
+            autoscroll=True,
+        )
+        with gr.Group():
             with gr.Row():
-                summarize_again_btn = gr.Button("Summarize Again")
+                input = gr.Textbox(lines=1, scale=10, show_label=False, container=False)
+                save_button = gr.Button("Save", scale=1)
 
-            gr.Markdown("# Chat with a LangChain Agent")
-            chatbox = gr.Chatbot(
-                type="messages",
-                label="Langchain Agent",
-            )
-            with gr.Group():
-                with gr.Row():
-                    input = gr.Textbox(lines=1, scale=10, show_label=False, container=False)
-                    save_button = gr.Button("Save", scale=1)
+        input.submit(_handle_chat, [input, chatbox], [input, chatbox])
 
-            def select_pdf(file_path: str):
-                if not file_path:
-                    return [None] * 6  # Return None for all 6 textboxes
+    return chat_interface, chatbox, input, save_button
 
-                result = skimmer.load_or_summary(file_path)
-                if result is None:
-                    return [None] * 6
 
-                # Extract values from dictionary in the order matching our components
-                return (
-                    result["core_question"],  # For core_question textbox
-                    result["introduction"],  # For introduction textbox
-                    result["methodology"],  # For methodology textbox
-                    result["results"],  # For results textbox
-                    result["discussion"],  # For discussion textbox
-                    result["limitations"],  # For limitations textbox
-                )
+with gr.Blocks(css=CSS, fill_width=True, fill_height=True) as demo:
+    with ExitStack() as stack:
+        stack.enter_context(ms.Application())
+        stack.enter_context(antd.ConfigProvider())
+        with gr.Row():
+            with gr.Column(scale=3):
+                explorer_pdf_viewer, file_explorer, pdf_viewer = generate_explorer_pdf_viewer()
 
-            def load_chat_history(file_path: str):
-                try:
-                    file_name = Path(file_path).name
-                    chat_record = db_manager.get_chat_history(file_name)
-                    if chat_record:
-                        return chat_record
-                    return []
-                except Exception as e:
-                    print(f"Error loading chat history: {str(e)}")
-                    return []
+            with gr.Column(scale=2):
+                summary_tabs, textboxes = generate_summary_tabs()
+                skim_again_btn = gr.Button("Skim again")
+                chat_interface, chatbox, input, save_button = generate_chat_interface(file_explorer)
 
-            # Add file_explorer change event to load chat history
+    def select_pdf(file_path: str):
+        if not file_path:
+            return [None] * 6  # Return None for all 6 textboxes
 
-            def save_chat_history(file_path: str, history: list):
-                if not file_path:
-                    return gr.Error("Please select a file first")
-                try:
-                    file_name = Path(file_path).name
-                    db_manager.save_chat_history(file_name, history)
-                    gr.Info("Chat history saved successfully")
-                except Exception as e:
-                    gr.Error(f"Error saving chat history: {str(e)}")
+        result = skimmer.load_or_summary(file_path)
+        dialogue_bot.set_url(get_file_url(file_path))
+        if result is None:
+            return [None] * 6
 
-            def _handle_chat(input: str, history: list):
-                history.append({"role": "user", "content": input})
+        # Extract values from dictionary in the order matching our components
+        return (
+            paragraph_to_markdown_list(result["core_question"]),
+            paragraph_to_markdown_list(result["introduction"]),
+            paragraph_to_markdown_list(result["methodology"]),
+            paragraph_to_markdown_list(result["results"]),
+            paragraph_to_markdown_list(result["discussion"]),
+            paragraph_to_markdown_list(result["limitations"]),
+        )
 
-                # response = chatbot.query_llm(input, history)
+    file_explorer.change(lambda x: x, inputs=[file_explorer], outputs=[pdf_viewer]).then(
+        fn=load_chat_history, inputs=[file_explorer], outputs=[chatbox]
+    ).then(fn=select_pdf, inputs=[file_explorer], outputs=textboxes)
+    # file_explorer.change(fn=get_summary, inputs=file_explorer, outputs=[result])
 
-                response = f"This is a {len(history)} test response"
-                history.append({"role": "assistant", "content": response})
-                return "", history
+    def force_summarize(file_path: str):
+        if not file_path:
+            return [None] * 6
 
-            save_button.click(fn=save_chat_history, inputs=[file_explorer, chatbox])
+        result = skimmer.force_summary(file_path)
+        if result is None:
+            return [None] * 6
 
-            input.submit(_handle_chat, [input, chatbox], [input, chatbox])
-            file_explorer.change(fn=select_pdf, inputs=[file_explorer], outputs=textboxes).then(
-                fn=load_chat_history, inputs=[file_explorer], outputs=[chatbox]
-            )
-            # file_explorer.change(fn=get_summary, inputs=file_explorer, outputs=[result])
+        return (
+            paragraph_to_markdown_list(result["core_question"]),
+            paragraph_to_markdown_list(result["introduction"]),
+            paragraph_to_markdown_list(result["methodology"]),
+            paragraph_to_markdown_list(result["results"]),
+            paragraph_to_markdown_list(result["discussion"]),
+            paragraph_to_markdown_list(result["limitations"]),
+        )
 
-            def force_summarize(file_path: str):
-                if not file_path:
-                    return [None] * 6
+    # Add the click event for summarize_again button
+    skim_again_btn.click(fn=force_summarize, inputs=[file_explorer], outputs=textboxes)
 
-                result = skimmer.force_summary(file_path)
-                if result is None:
-                    return [None] * 6
-
-                return (
-                    result["core_question"],
-                    result["introduction"],
-                    result["methodology"],
-                    result["results"],
-                    result["discussion"],
-                    result["limitations"],
-                )
-
-            # Add the click event for summarize_again button
-            summarize_again_btn.click(fn=force_summarize, inputs=[file_explorer], outputs=textboxes)
-
-demo.launch()
+demo.launch(server_port=7880)

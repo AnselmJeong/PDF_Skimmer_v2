@@ -540,6 +540,17 @@ wheels = [
 ]
 
 [[package]]
+name = "gradio-pdf"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gradio" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/4c/8a9177ebdb02bb55892cc8903c21eada48f40d592a0152a25e9277238c35/gradio_pdf-0.0.22-py3-none-any.whl", hash = "sha256:6f710eca3464d2d37aee742eb2f10dbe76772ebe5dfcfb993da40c710c9ad1b5", size = 1356994 },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1030,6 +1041,18 @@ wheels = [
 ]
 
 [[package]]
+name = "modelscope-studio"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gradio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3e/a8/735e9497cfce42176e824490c056cc81eb0a3cdf1521ae8b7a99a0becb59/modelscope_studio-1.0.2.tar.gz", hash = "sha256:6da1ed4909587eb4cf6c0feed3eb6dd97185b505b6823b71c5f81a15b9229971", size = 10856869 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/64/9eb0bb5ad6bc8dcd7282fc762a2fa19615c3f9862fe6e4a8b3104de09e76/modelscope_studio-1.0.2-py3-none-any.whl", hash = "sha256:eda7e364fb73672ce683a861786f1eca4f593ac0c3d11471c391e887ac0af622", size = 11579698 },
+]
+
+[[package]]
 name = "multidict"
 version = "6.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1190,6 +1213,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "gradio" },
+    { name = "gradio-pdf" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "langchain-community" },
@@ -1197,6 +1221,7 @@ dependencies = [
     { name = "langchain-deepseek" },
     { name = "langchain-google-genai" },
     { name = "langchain-openai" },
+    { name = "modelscope-studio" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "python-dotenv" },
@@ -1207,6 +1232,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "gradio", specifier = ">=5.13.2" },
+    { name = "gradio-pdf", specifier = ">=0.0.22" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipywidgets", specifier = ">=8.1.5" },
     { name = "langchain-community", specifier = ">=0.3.16" },
@@ -1214,6 +1240,7 @@ requires-dist = [
     { name = "langchain-deepseek", specifier = ">=0.0.1" },
     { name = "langchain-google-genai", specifier = ">=2.0.9" },
     { name = "langchain-openai", specifier = ">=0.3.3" },
+    { name = "modelscope-studio", specifier = ">=1.0.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
